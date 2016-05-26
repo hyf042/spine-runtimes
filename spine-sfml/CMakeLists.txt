@@ -68,7 +68,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	find_library(SFML_GRAPHICS sfml-graphics PATHS ${SFML_DIR}/Frameworks)
 	target_link_libraries(spine-sfml-example ${SFML_GRAPHICS})
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-	# FIXME, link libraries
+	target_link_libraries(spine-sfml-example sfml-graphics sfml-window sfml-system)
 else()	
 	set(SFML_LIBS ${SFML_DIR}/lib)
 	target_link_libraries(spine-sfml-example ${SFML_LIBS}/sfml-main-d.lib)
