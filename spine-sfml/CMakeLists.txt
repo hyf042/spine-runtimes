@@ -34,7 +34,11 @@ else()
 	set(SFML_DIR ${DEPS_DIR}/SFML-2.3.2)
 	if (NOT EXISTS ${SFML_DIR})
 		message("Downloading SFML for Windows 32-bit")
-		file(DOWNLOAD "${SFML_URL}" "${DEPS_DIR}/sfml.tar.gz")
+		file(DOWNLOAD "${SFML_URL}" "${DEPS_DIR}/sfml.zip")
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} -E tar x  ${DEPS_DIR}/sfml.zip
+			WORKING_DIRECTORY ${DEPS_DIR}
+    	)
 	endif()
 endif()
 
@@ -63,6 +67,19 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	target_link_libraries(spine-sfml-example ${SFML_WINDOW})
 	find_library(SFML_GRAPHICS sfml-graphics PATHS ${SFML_DIR}/Frameworks)
 	target_link_libraries(spine-sfml-example ${SFML_GRAPHICS})
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	# FIXME, link libraries
+else()	
+	set(SFML_LIBS ${SFML_DIR}/lib)
+	target_link_libraries(spine-sfml-example ${SFML_LIBS}/sfml-main-d.lib)
+	target_link_libraries(spine-sfml-example ${SFML_LIBS}/sfml-graphics-s-d.lib)
+	target_link_libraries(spine-sfml-example ${SFML_LIBS}/sfml-window-s-d.lib)	
+	target_link_libraries(spine-sfml-example ${SFML_LIBS}/sfml-system-s-d.lib)
+	target_link_libraries(spine-sfml-example ${SFML_LIBS}/freetype.lib)
+	target_link_libraries(spine-sfml-example ${SFML_LIBS}/jpeg.lib)
+	target_link_libraries(spine-sfml-example opengl32)
+	target_link_libraries(spine-sfml-example gdi32)
+	target_link_libraries(spine-sfml-example winmm)
 endif()
 
 # copy data to build directory
