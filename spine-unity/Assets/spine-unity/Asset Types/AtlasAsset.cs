@@ -164,6 +164,9 @@ namespace Spine.Unity {
 					break;
 				}
 			}
+			if (material == null && atlasAsset.materials.Length == 1) {
+				material = atlasAsset.materials[0];
+			}
 			if (material == null) {
 				Debug.LogError("Material with texture name \"" + name + "\" not found for atlas asset: " + atlasAsset.name, atlasAsset);
 				return;

@@ -92,14 +92,41 @@ namespace Spine {
 		#endif // WINDOWS_STOREAPP
 		#endif // !UNITY
 
+		#if UNITY
+		public SkeletonData ReadSkeletonData (UnityEngine.TextAsset textAsset) {
+			Dictionary<String, Object> jsonData;
+			#if UNITY_EDITOR
+			if (!UnityEngine.Application.isPlaying) {
+				return ReadSkeletonData(new StringReader(textAsset.text));
+			}
+			#endif // UNITY_EDITOR
+			if(!Nico.SpineJsonCache.TryToGetJsonObjectStatic(textAsset, out jsonData)) {
+				var reader = new StringReader(textAsset.text);
+
+				var root = Json.Deserialize(reader) as Dictionary<String, Object>;
+				if (root == null)
+					throw new Exception("Invalid JSON.");
+
+				jsonData = Nico.SpineJsonCache.SetJsonObjectStatic(textAsset, root);
+			}
+			return ReadSkeletonDataInternal(jsonData);
+		}
+		#endif // UNITY
+
 		public SkeletonData ReadSkeletonData (TextReader reader) {
 			if (reader == null) throw new ArgumentNullException("reader cannot be null.");
 
-			var scale = this.Scale;
-			var skeletonData = new SkeletonData();
-
 			var root = Json.Deserialize(reader) as Dictionary<String, Object>;
 			if (root == null) throw new Exception("Invalid JSON.");
+
+			return ReadSkeletonDataInternal(root);
+		}
+
+		public SkeletonData ReadSkeletonDataInternal (Dictionary<String, Object> root) {
+			if (root == null) throw new ArgumentNullException("json data cannot be null.");
+
+			var scale = this.Scale;
+			var skeletonData = new SkeletonData();
 
 			// Skeleton.
 			if (root.ContainsKey("skeleton")) {

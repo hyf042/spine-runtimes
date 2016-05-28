@@ -70,6 +70,7 @@ namespace Spine.Unity {
 		#endif
 
 		public bool logErrors = false;
+		public bool refreshRendererMaterials = true;
 
 		#if SPINE_OPTIONAL_RENDEROVERRIDE
 		public bool disableRenderingOnOverride = true;
@@ -158,7 +159,9 @@ namespace Spine.Unity {
 					meshFilter.sharedMesh = null;
 
 				meshRenderer = GetComponent<MeshRenderer>();
-				if (meshRenderer != null) meshRenderer.sharedMaterial = null;
+				if (meshRenderer != null && refreshRendererMaterials) {
+					meshRenderer.sharedMaterial = null;
+				}
 
 				currentInstructions.Clear();
 				vertices = null;
@@ -207,6 +210,15 @@ namespace Spine.Unity {
 		}
 
 		public virtual void LateUpdate () {
+			LateUpdateImpl();
+		}
+
+		/// <summary>
+		/// The actual implementation of LateUpdate(), since LateUpdate is a virtual function,
+		/// so we extract out this code so that we can make sure DealRefresh() run the actual code here.
+		/// TODO(hyf042): figure out a better way to solve this.
+		/// </summary>
+		private void LateUpdateImpl () {
 			if (!valid)
 				return;
 
@@ -711,7 +723,9 @@ namespace Spine.Unity {
 					else
 						sharedMaterials = submeshMaterials.ToArray();
 
-					meshRenderer.sharedMaterials = sharedMaterials;
+					if (refreshRendererMaterials) {
+						meshRenderer.sharedMaterials = sharedMaterials;
+					}
 				}
 			}
 
@@ -951,6 +965,11 @@ namespace Spine.Unity {
 			Gizmos.DrawCube(meshBounds.center, meshBounds.size);
 		}
 		#endif
+
+		public void DealRefresh() {
+			Initialize(true);
+			LateUpdateImpl();
+		}
 
 		///<summary>This is a Mesh that also stores the instructions SkeletonRenderer generated for it.</summary>
 		public class SmartMesh {

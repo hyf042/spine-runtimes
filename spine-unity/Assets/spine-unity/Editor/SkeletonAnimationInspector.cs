@@ -36,7 +36,7 @@ namespace Spine.Unity.Editor {
 	
 	[CustomEditor(typeof(SkeletonAnimation))]
 	public class SkeletonAnimationInspector : SkeletonRendererInspector {
-		protected SerializedProperty animationName, loop, timeScale, autoReset;
+		protected SerializedProperty animationName, loop, timeScale, autoReset, lockFpsForBetterPerformance, playWhenNotVisible;
 		protected bool wasAnimationNameChanged;
 
 		protected override void OnEnable () {
@@ -44,6 +44,8 @@ namespace Spine.Unity.Editor {
 			animationName = serializedObject.FindProperty("_animationName");
 			loop = serializedObject.FindProperty("loop");
 			timeScale = serializedObject.FindProperty("timeScale");
+			lockFpsForBetterPerformance = serializedObject.FindProperty("lockFpsForBetterPerformance");
+			playWhenNotVisible = serializedObject.FindProperty("playWhenNotVisible");
 		}
 
 		protected override void DrawInspectorGUI () {
@@ -94,6 +96,8 @@ namespace Spine.Unity.Editor {
 
 			EditorGUILayout.PropertyField(loop);
 			EditorGUILayout.PropertyField(timeScale);
+			EditorGUILayout.PropertyField(lockFpsForBetterPerformance);
+			EditorGUILayout.PropertyField(playWhenNotVisible);
 			component.timeScale = Mathf.Max(component.timeScale, 0);
 
 			EditorGUILayout.Space();

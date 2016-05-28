@@ -71,9 +71,58 @@ namespace Spine.Unity {
 			}
 		}
 
+		public event Spine.AnimationState.EventDelegate Event;
+
 		[SerializeField]
 		[SpineAnimation]
 		private String _animationName;
+
+#region Nico Changes
+		public bool ignoreTimeScale = false;
+
+		public bool lockFpsForBetterPerformance = true;
+		public bool playWhenNotVisible = false;
+		private float lockDeltaTime = 1.0f / 12.0f;
+		private float m_accumulateUpdateTime = -1;
+		private float m_accumulateLateUpdateTime = -1;
+
+		private bool m_firstUpdate = true;
+		private bool m_firstLateUpdate = true;
+		private Renderer m_renderer_cached = null;
+		public bool IsVisible {
+			get {
+				if (m_renderer_cached == null) {
+					m_renderer_cached = GetComponent<Renderer>();
+				}
+				return m_renderer_cached.isVisible;
+			}
+		}
+
+		private float m_laggedDeltaTime;
+
+		public void ClearTimeCounters() {
+			m_accumulateUpdateTime = -1;
+			m_accumulateLateUpdateTime = -1;
+			m_laggedDeltaTime = 0;
+		}
+
+		bool BlockThisFrame(ref float deltaTime, ref float accumulateTime) {
+			// If < 0, which means the first time, let it go.
+			if (accumulateTime < 0) {
+				accumulateTime = deltaTime;
+				return false;
+			} else {
+				accumulateTime += deltaTime;
+				if (accumulateTime < lockDeltaTime) {
+					return true;
+				} else {
+					deltaTime = accumulateTime;
+					accumulateTime = 0;
+					return false;
+				}
+			}
+		}
+#endregion // Nico Changes
 
 		public String AnimationName {
 			get {
@@ -130,6 +179,10 @@ namespace Spine.Unity {
 		}
 		#endregion
 
+		public void Reset() {
+			Initialize(true);
+		}
+
 		public override void Initialize (bool overwrite) {
 			if (valid && !overwrite)
 				return;
@@ -139,7 +192,11 @@ namespace Spine.Unity {
 			if (!valid)
 				return;
 
+			ClearTimeCounters();
+			m_firstUpdate = m_firstLateUpdate = true;
+
 			state = new Spine.AnimationState(skeletonDataAsset.GetAnimationStateData());
+			state.Event += Event;
 
 			#if UNITY_EDITOR
 			if (!string.IsNullOrEmpty(_animationName)) {
@@ -162,16 +219,43 @@ namespace Spine.Unity {
 		}
 
 		public virtual void Update () {
-			Update(Time.deltaTime);
+			if (ignoreTimeScale && Time.timeScale < 0.05f) {
+				Update(Time.unscaledDeltaTime);
+				// When timeScale == 0, LateUpdate() won't be called by Unity.
+				base.LateUpdate();
+			} else {
+				Update(Time.deltaTime);
+			}
 		}
 
 		public virtual void Update (float deltaTime) {
 			if (!valid)
 				return;
 
+			if (lockFpsForBetterPerformance && BlockThisFrame(ref deltaTime, ref m_accumulateUpdateTime)) {
+				return;
+			}
+
+			m_laggedDeltaTime += deltaTime * timeScale;
+
+			if (!m_firstUpdate && (!IsVisible && !playWhenNotVisible)
+#if UNITY_EDITOR
+				&& Application.isPlaying
+#endif
+			) {
+				return;
+			}
+
+#if UNITY_EDITOR
+			if (Application.isPlaying)
+#endif
+			{
+				m_firstUpdate = false;
+			}
+
 			deltaTime *= timeScale;
-			skeleton.Update(deltaTime);
-			state.Update(deltaTime);
+			skeleton.Update(m_laggedDeltaTime);
+			state.Update(m_laggedDeltaTime);
 			state.Apply(skeleton);
 
 			if (_UpdateLocal != null)
@@ -187,8 +271,31 @@ namespace Spine.Unity {
 			if (_UpdateComplete != null) {
 				_UpdateComplete(this);
 			}
+
+			m_laggedDeltaTime = 0;
 		}
 
+		public override void LateUpdate() {
+			if (!m_firstLateUpdate && (!IsVisible && !playWhenNotVisible)
+#if UNITY_EDITOR
+				&& Application.isPlaying
+#endif
+				) {
+				return;
+			}
+#if UNITY_EDITOR
+			if (Application.isPlaying)
+#endif
+			{
+				m_firstLateUpdate = false;
+			}
+
+			float deltaTime = Time.deltaTime;
+			if (lockFpsForBetterPerformance && BlockThisFrame(ref deltaTime, ref m_accumulateLateUpdateTime)) {
+				return;
+			}
+			base.LateUpdate();
+		}
 	}
 
 }

@@ -230,6 +230,14 @@ namespace Spine {
 			return null;
 		}
 
+		public List<string> FindRegionStartsWith(String name) {
+			List<string> ret = new List<string>();
+			for (int i = 0, n = regions.Count; i < n; i++)
+				if (regions[i].name.StartsWith(name))
+					ret.Add(regions[i].name);
+			return ret;
+		}
+
 		public void Dispose () {
 			if (textureLoader == null) return;
 			for (int i = 0, n = pages.Count; i < n; i++)
